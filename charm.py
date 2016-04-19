@@ -1,102 +1,30 @@
-class Fitter:
+class Charm:
 
-	def __init__(self, datafile, verbose=False):
+	def __init__(self, input_file, plot_types=("pdf", "cdf", "ccdf")):
+		self.input_file = input_file
+		self.plot_types = list(plot_types)
 
-		# properties
-		self.verbose = verbose
-		self.info("Initialising program...")
+	def read(self):
+		from pandas import read_csv
+		input_data = read_csv(self.input_file, header=None, sep="\t")
 
-		# input
-		self.datafile = datafile
-		self.data = []
+		return input_data
 
-		# calculated or stored data
-		self.x = []
-		self.y = []
-		self.on = []
-		self.off = []
+	def on_data(self):
+		return self.read()[0]
 
-	def import_data(self):
-		from pandas import read_csv as read
-		self.info("Importing data...")
-		self.data = read(self.datafile, sep="\t", header=None)
-		self.on = self.data[0]
-		self.off = self.data[1]
-		return self.data
+	def draw_plots(self):
+		from matplotlib import pyplot as plt
 
-	# fit
-	def fit(self, auto_xmin=False):
+		fig = plt.figure(figsize=(4, 4))
+		ax = fig.add_subplot(111)
+		data = self.on_data()
 		from powerlaw import Fit
+		experimental = Fit(data, xmin=min(data))
+		experimental.plot_ccdf(ax=ax)
 
-		def on():
-			if auto_xmin:
-				experimental = Fit(self.on)
-			else:
-				experimental = Fit(self.on, xmin=min(self.data))
+		plt.show()
 
-			pl_alpha = experimental.power_law.alpha
-			pl_Lambda = 0
-			pl_D = experimental.power_law.D
 
-			tpl_alpha = experimental.truncated_power_law.alpha
-			tpl_Lambda = experimental.truncated_power_law.Lambda
-			tpl_D = experimental.truncated_power_law.D
-
-			return [[pl_alpha, pl_Lambda, pl_D], [tpl_alpha, tpl_Lambda, tpl_D]]
-
-		def off():
-			if auto_xmin:
-				experimental = Fit(self.off)
-			else:
-				experimental = Fit(self.off, xmin=min(self.data))
-
-			pl_alpha = experimental.power_law.alpha
-			pl_Lambda = 0
-			pl_D = experimental.power_law.D
-
-			tpl_alpha = experimental.truncated_power_law.alpha
-			tpl_Lambda = experimental.truncated_power_law.Lambda
-			tpl_D = experimental.truncated_power_law.D
-
-			return [[pl_alpha, pl_Lambda, pl_D], [tpl_alpha, tpl_Lambda, tpl_D]]
-
-		self.on = on()
-		self.off = off()
-
-		return on(), off()
-
-	def print_output(self):
-		filename = self.datafile.split()[-1]
-		print(filename)
-		for mode in ["ON", "OFF"]:
-			print(mode)
-			print("\talpha\tlambda\tD value")
-			row = "pl"
-			if mode == "ON":
-				for each in self.on:
-					print("{}\t{:0.3f}\t{:0.3f}\t{:0.3f}".format(row, each[0], each[1], each[2]))
-					row = "tpl"
-				print("\n")
-			if mode == "OFF":
-				for each in self.off:
-					print("{}\t{:0.3f}\t{:0.3f}\t{:0.3f}".format(row, each[0], each[1], each[2]))
-					row = "tpl"
-				print("\n")
-
-	# verbose mode
-	def info(self, information):
-		if self.verbose:
-			print(information)
-
-	# run whole program
-	def main(self):
-		self.import_data()
-		self.fit()
-		self.print_output()
-		exit()
-
-if __name__ == "__main__":
-	run = Fitter("1.txt", verbose=True)
-	run.import_data()
-	a, b = run.fit()
-	print(a, b)
+o = Charm("./1.txt")
+print(o.draw_plots())
