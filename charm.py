@@ -5,4 +5,4 @@ b = 567
 
 c = a + b
 
-print(c)
+print(c * 3)
